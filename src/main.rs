@@ -11,7 +11,9 @@ pub enum State {
 }
 
 #[derive(Debug)]
-pub struct Alignment {
+pub struct Alignment<'a> {
+    pub m: &'a str,
+    pub n: &'a str,
     pub path: Vec<State>,
     pub cur_state: State,
     pub matrix: Vec<Vec<i32>>,
@@ -19,19 +21,21 @@ pub struct Alignment {
     pub cur_xi: usize,
     pub cur_yj: usize,
 }
-impl Alignment {
-    pub fn new(xs_size: usize, ys_size: usize) -> Self {
-        let xs_size = xs_size + 1;
-        let ys_size = ys_size + 1;
+impl<'a> Alignment<'a> {
+    pub fn new(m: &'a str, n: &'a str) -> Self {
+        let xs_size = m.len() + 1;
+        let ys_size = n.len() + 1;
 
-        let m = vec![vec![0; ys_size]; xs_size];
+        let score_matrix = vec![vec![0; ys_size]; xs_size];
         let t = vec![vec![State::Start; ys_size]; xs_size];
 
         // Initialize from last + (1,1) fake element of sequence alignment matrix
         Alignment {
+            m: m,
+            n: n,
             path: vec![State::End],
             cur_state: State::End,
-            matrix: m,
+            matrix: score_matrix,
             trace: t,
             cur_xi: xs_size,
             cur_yj: ys_size,
@@ -57,7 +61,7 @@ impl Alignment {
         println!("PATH: {:?}", self.path);
     }
 
-    pub fn fill_wholematrix(&mut self, m: &str, n: &str) {
+    pub fn fill_wholematrix(&mut self) {
         let offset_left = 1;
         let x_len = self.matrix.len();
         let y_len = self.matrix[0].len();
@@ -79,12 +83,12 @@ impl Alignment {
                 let n_start_y = j.checked_sub(offset_left).unwrap() + 1;
                 println!(
                     "({}, {})",
-                    &m[m_start_x..m_start_x + 1],
-                    &n[n_start_y..n_start_y + 1]
+                    &self.m[m_start_x..m_start_x + 1],
+                    &self.n[n_start_y..n_start_y + 1]
                 );
                 self.matrix[x_idx][j + 1] = self.calc_score(
-                    &m[m_start_x..m_start_x + 1],
-                    &n[n_start_y..n_start_y + 1],
+                    &self.m[m_start_x..m_start_x + 1],
+                    &self.n[n_start_y..n_start_y + 1],
                     x_idx,
                     j + 1,
                 )
@@ -94,8 +98,8 @@ impl Alignment {
                 let m_start_x = i.checked_sub(offset_left).unwrap() + 1;
                 let n_start_y = y_idx.checked_sub(offset_left).unwrap();
                 self.matrix[i + 1][y_idx] = self.calc_score(
-                    &m[m_start_x..m_start_x + 1],
-                    &n[n_start_y..n_start_y + 1],
+                    &self.m[m_start_x..m_start_x + 1],
+                    &self.n[n_start_y..n_start_y + 1],
                     i + 1,
                     y_idx,
                 )
@@ -105,7 +109,7 @@ impl Alignment {
             let n_start_y = j + 1;
 
             self.matrix[m_start_x][n_start_y] =
-                self.calc_score(&m[i..i + 1], &n[j..j + 1], m_start_x, n_start_y)
+                self.calc_score(&self.m[i..i + 1], &self.n[j..j + 1], m_start_x, n_start_y)
         }
 
         // Calculate remaining columns after the main diagonal in case of the sequences have different lenghts (len(m) != len(n))
@@ -116,8 +120,8 @@ impl Alignment {
                 let m_start_x = c.checked_sub(offset_left).unwrap();
                 let n_start_y = y_idx.checked_sub(offset_left).unwrap();
                 self.matrix[c][y_idx] = self.calc_score(
-                    &m[m_start_x..m_start_x + 1],
-                    &n[n_start_y..n_start_y + 1],
+                    &self.m[m_start_x..m_start_x + 1],
+                    &self.n[n_start_y..n_start_y + 1],
                     c,
                     y_idx,
                 )
@@ -314,9 +318,9 @@ fn main() {
     // let n = "GAATTC";
     let n = "GATTA";
 
-    let mut aln = Alignment::new(m.len(), n.len());
+    let mut aln = Alignment::new(m, n);
 
-    aln.fill_wholematrix(m, n);
+    aln.fill_wholematrix();
 
     let mut idxs = Some((m.len(), n.len()));
 
