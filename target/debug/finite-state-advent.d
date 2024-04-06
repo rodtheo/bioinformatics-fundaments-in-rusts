@@ -1,1 +1,0 @@
-/home/rodtheo/Bioinfo/project-data/rust/advent-of-code-2021/finite-state-advent/target/debug/finite-state-advent: /home/rodtheo/Bioinfo/project-data/rust/advent-of-code-2021/finite-state-advent/src/main.rs
